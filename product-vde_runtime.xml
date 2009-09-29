@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<product productid="vde_runtime" active="1">
+<product productid="vde_runtime" active="0">
 	<title>Runtime Development Environment</title>
-	<description />
+	<description>Loads product data from the filesystem and injects it into memory at run-time.</description>
 	<version>1.0</version>
 	<url />
 	<versioncheckurl />
 	<dependencies>
+		<dependency dependencytype="php" minversion="5" maxversion="" />
 	</dependencies>
 	<codes>
 	</codes>
@@ -20,7 +21,7 @@
 require_once(DIR . '/includes/vde/project.php');
 
 $vdeRuntime = new VDE_Runtime($vbulletin);
-$vdeRuntime->loadProject(new VDE_Project('./projects/projectname'));
+$vdeRuntime->loadProject(new VDE_Project('./projects/productname'));
 
 if ($initCode = $vdeRuntime->getInitCode()) {
 	eval($initCode);
