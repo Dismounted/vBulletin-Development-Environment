@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<product productid="vde_runtime" active="1">
+	<title>Runtime Development Environment</title>
+	<description />
+	<version>1.0</version>
+	<url />
+	<versioncheckurl />
+	<dependencies>
+	</dependencies>
+	<codes>
+	</codes>
+	<templates>
+	</templates>
+	<plugins>
+		<plugin active="1" executionorder="5">
+			<title>Runtime Development Environment</title>
+			<hookname>init_startup</hookname>
+			<phpcode><![CDATA[require_once(DIR . '/includes/vde/runtime.php');
+require_once(DIR . '/includes/vde/project.php');
+
+$vdeRuntime = new VDE_Runtime($vbulletin);
+$vdeRuntime->loadProject(new VDE_Project('./projects/projectname'));
+
+if ($initCode = $vdeRuntime->getInitCode()) {
+	eval($initCode);
+}]]></phpcode>
+		</plugin>
+	</plugins>
+	<phrases>
+	</phrases>
+	<options>
+	</options>
+	<helptopics>
+	</helptopics>
+	<cronentries>
+	</cronentries>
+	<faqentries>
+	</faqentries>
+</product>
