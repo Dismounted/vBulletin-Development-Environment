@@ -11,7 +11,7 @@ if (is_array($argv)) {
 chdir(dirname($_SERVER['SCRIPT_NAME']));
 require('./global.php');
 require_once(DIR . '/includes/vde/builder.php');
-require_once(DIR . 'includes/vde/project.php');
+require_once(DIR . '/includes/vde/project.php');
 
 if (defined('CLI_ARGS')) {
     $argv = unserialize(CLI_ARGS);

@@ -276,7 +276,6 @@ class VDE_Project {
                         'varname' => substr($varname, 0, -4),
                         'text'    => trim(file_get_contents($phraseFile))
                     );
-        
                 }
                 
                 $phraseTypes[$fieldName] = $phraseType;

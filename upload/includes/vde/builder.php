@@ -320,10 +320,10 @@ class VDE_Builder {
             
             foreach ($this->_phrases[$fieldName]['phrases'] as $varname => $text) {
                 $phrasetypes[$fieldName]['phrases'][$varname] = array(
-                    'varname'  => $varname,
-                    'text'     => $text,
-                    'username' => $this->_project->meta['author'],
-                    'version'  => $this->_project->meta['version']
+                    'varname' => $varname,
+                    'text'    => $text,
+                    'author'  => $this->_project->meta['author'],
+                    'version' => $this->_project->meta['version']
                 );
             }
         }
@@ -340,8 +340,8 @@ class VDE_Builder {
 			{
 				$attributes = array(
 					'name'     => $phrase['varname'],
-					'username' => $phrase['author'],
-                    'version'  => $phrase['version'],
+					'username' => $this->_project->meta['author'],
+                    'version'  => $this->_project->meta['version'],
                     'date'     => TIMENOW
 				);
 				
