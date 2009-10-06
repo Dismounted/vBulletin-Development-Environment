@@ -102,8 +102,9 @@ class VDE_Builder {
         
         if ($uploadFiles = array_merge($project->files, $this->_files)) {
             $this->_copyFiles($uploadFiles, $project->buildPath . '/upload');
+            $this->_processChecksumFile($uploadFiles, $project->buildPath . '/upload');
         }
-        
+
         $this->_output .= "Project {$project->meta[title]} Built Succesfully!\n\n";
         return $this->_output;    
     }
@@ -366,6 +367,17 @@ class VDE_Builder {
     }
     
     /**
+     * Creates the checksum file for vBulletin "diagnostics".
+     * @param   array       Files to add to checksums file
+     * @param   string      Upload path (build dir / upload)
+     */
+    protected function _processChecksumFile($files, $uploadPath) {
+        $checksumFile = new VDE_Builder_ChecksumFile($this->_project, $uploadPath);
+        $checksumFile->build($files);
+        $this->_output .= "Created project checksum file\n";
+    }
+    
+    /**
      * Initiate copying of files and creation of upload dir.
      * @param   array       Files to copy
      * @param   string      Upload path (build dir / upload)
@@ -376,8 +388,7 @@ class VDE_Builder {
         if (!is_dir($uploadPath)) {
             mkdir($uploadPath, 0644);
         }
-         
-            
+        
         foreach ($files as $file) {
             $fc->copy($file, $dest = "$uploadPath" . str_replace(DIR, '', $file), $uploadPath);
             $this->_output .= "Copied file " . str_replace($uploadPath . '/', '', $dest) . "\n";
@@ -430,6 +441,120 @@ class VDE_Builder_FileCopier {
        
        copy($source, $dest);
     }
+}
+
+/**
+ * Handles creation of checksum files
+ * @package     VDE
+ * @author      Dismounted
+ */
+class VDE_Builder_ChecksumFile {
+	/**
+	 * VDE Project Object
+	 * @var     VDE_Project
+	 */
+	protected $_project;
+
+	/**
+	 * Base path of project's files
+	 * @var     VDE_Project
+	 */
+	protected $_uploadPath;
+
+	/**
+	 * List of files and their checksums
+	 * @var     array
+	 */
+	protected $_checksums;
+
+	/**
+	 * List of lines for PHP file
+	 * @var     array
+	 */
+	protected $_php;
+
+	/**
+	 * Prepares the object for use
+	 * @param   VDE_Project
+	 * @param   string
+	 */
+	public function __construct(VDE_Project $project, $uploadPath) {
+		$this->_project = $project;
+		$this->_uploadPath = $uploadPath;
+	}
+
+	/**
+	 * Builds a project's checksum file
+	 * @param   array       Files to add to checksums file
+	 * @param   string      Callback function to calculate hash
+	 */
+	public function build($files, $callback = 'md5_file') {
+		$this->_processFiles($files, $callback);
+		$this->_processChecksums();
+		$this->_buildFile();
+	}
+
+	/**
+	 * Builds the file from a list of checksums and writes it
+	 * to the project "upload" directory
+	 */
+	protected function _buildFile() {
+		if (!is_array($this->_php)) {
+			throw new VDE_Builder_Exception('Checksums file array not found -- run _processChecksums()');
+		}
+
+		// write the file
+		$phpfile = implode("\n", $this->_php);
+		$filename = 'md5_sums_' . $this->_project->id . '.php';
+		if (file_put_contents($this->_uploadPath . "/includes/$filename", $phpfile) === false) {
+			throw new VDE_Builder_Exception('Could not write checksums file');
+		}
+	}
+
+	/**
+	 * Processes each file and finds its checksum
+	 * @param   array       Files to add to checksums file
+	 */
+	protected function _processFiles($files, $callback) {
+		// two steps as files could be not in directory order
+		// first step
+		foreach ($files AS $file) {
+			$path = str_replace(DIR, '', $file);
+			$pathinfo = pathinfo($path);
+			$hash = call_user_func($callback, $this->_uploadPath . $file);
+
+			$this->_checksums["$pathinfo[dirname]"]["$pathinfo[basename]"] = $hash;
+		}
+		ksort($this->_checksums);
+	}
+
+	/**
+	 * Processes each checksum and creates the file
+	 */
+	protected function _processChecksums() {
+		// create file header
+		$this->_php = array('<?php',
+			'// ' . $this->_project->id . ' ' . $this->_project->meta['version'] . ', ' . date('H:i:s, D M jS Y'),
+			'$md5_sums = array('
+		);
+
+		// second step -- see _processFiles()
+		foreach ($this->_checksums AS $dir => $files) {
+			ksort($files);
+			$this->_php[] = "\t'$dir' => array(";
+
+			// process checksums
+			foreach ($files AS $filename => $checksum) {
+				$this->_php[] = "\t\t'$filename' => '$checksum',";
+			}
+
+			$this->_php[] = "\t),";
+		}
+
+		// close the file
+		$this->_php[] = ');';
+		$this->_php[] = '?>';
+	}
 }
 
 /**
