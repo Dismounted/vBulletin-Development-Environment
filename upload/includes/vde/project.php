@@ -1,42 +1,58 @@
 <?php
-
+/**
+ * Handles working with project data so the builder gets it in a unified format.
+ *
+ * @package     VDE
+ * @author      SirAdrian
+ */
 class VDE_Project {
+    /**
+     * The product ID of the project - config.php 'id'
+     * @var     string
+     */
     public $id;
+    
+    /**
+     * The active status of this project - config.php 'active'
+     * @var     boolean int
+     */
     public $active;
+    
+    /**
+     * The encoding type of the project.  Defaults to ISO-9958-1 - config.php 'encoding'
+     * @var     string
+     */
     public $encoding;
+    
+    /**
+     * The build (output) path of the project - config.php 'buildpath'
+     * @var     string
+     */
     public $buildPath;
+    
+    /**
+     * Other meta information about project - config.php:
+     * title, description, url, versionurl, version, author
+     * @var     array
+     */
     public $meta;
+    
+    /**
+     * List of files to be copied to the build directory - config.php 'files'
+     * @var     array
+     */
     public $files;
     
+    /**
+     * The project base directory
+     * @var     string
+     */
     protected $_path;
     
-	protected $_items = array(
-		'templates' => array(
-			'path' => 'templates',
-			'ext' => '.html'
-		),
-		'phrases' => array(
-			'path' => 'phrases',
-			'ext' => '.txt'
-		),
-		'options' => array(
-			'path' => 'options',
-			'ext' => '.php'
-		),
-		'plugins' => array(
-			'path' => 'plugins',
-			'ext' => '.php'
-		),
-		'scheduled_tasks' => array(
-			'path' => 'cron',
-			'ext' => '.php'
-		),
-		'codes' => array(
-		  'path' => 'installcodes',
-		  'ext'  => '.php'
-		)
-	);
-    
+    /**
+     * Instaniates a new project from a given project root directory.
+     * @param   string      Root path of project, must contain config.php
+     */
     public function __construct($path) {
         if (!file_exists("$path/config.php")) {
             throw new VDE_Project_Exception("No project found at $path");
@@ -63,10 +79,18 @@ class VDE_Project {
         $this->_dependencies = $config['dependencies'];
     }
     
+    /**
+     * Returns the dependencies
+     * @return  array       Dependencies defined in config.php - 'dependencies'
+     */
     public function getDependencies() {
         return $this->_dependencies;
     }   
     
+    /**
+     * Returns the different install/uninstall code information
+     * @return  array       array containing versions => 'up' code and 'down' code
+     */
     public function getCodes() {
         if (!is_dir($dir = $this->_path . '/updown')) {   
             return array();   
@@ -87,10 +111,18 @@ class VDE_Project {
         return $versions;
     }
     
+    /**
+     * Returns back the simple template information
+     * @return  array       Associtative array of template titles => template html
+     */
     public function getTemplates() {
         $templates = array();
         
-        foreach (scandir($dir = $this->_path . '/templates') as $file) {
+        if (!is_dir($dir = $this->_path . '/templates')) {
+            return array();
+        }  
+        
+        foreach (scandir($dir) as $file) {
             if (substr($file, -5) != '.html') {
                 continue;
             }
@@ -101,6 +133,10 @@ class VDE_Project {
         return $templates;
     }
     
+    /**
+     * Returns back all the template information
+     * @return  array       List of templates and all relevant info
+     */
     public function getExtendedTemplates() {
         $templates = array();
         
@@ -124,10 +160,18 @@ class VDE_Project {
         return $templates;
     }
     
+    /**
+     * Returns basic plugin information
+     * @return  array       Hook names => Plugin Code
+     */
     public function getPlugins() {
         $plugins = array();
         
-        foreach (scandir($dir = $this->_path . '/plugins') as $file) {
+        if (!is_dir($dir = $this->_path . '/plugins')) {
+            return array();   
+        }
+        
+        foreach (scandir($dir) as $file) {
             if (substr($file, -4) != '.php') {
                 continue;
             }
@@ -138,6 +182,10 @@ class VDE_Project {
         return $plugins;
     }
     
+    /**
+     * Returns extended plugin information
+     * @return  array       List of plugins and all relevant info
+     */
     public function getExtendedPlugins() {
         $plugins = array();
         
@@ -164,10 +212,20 @@ class VDE_Project {
         return $plugins;
     }
     
+    /**
+     * Strips a PHP code file of its PHP tags
+     * 
+     * @param   string      PHP Code containing PHP tags
+     * @return  string      PHP Code that is safe to eval()
+     */
     protected function _getEvalableCode($code) {
         return trim(trim($code, '<?php'));
     }
     
+    /**
+     * Returns back the project's options and current (or default) values
+     * @return  array       Associative array of project options and values
+     */
     public function getOptions() {
         $options = array();
         
@@ -194,6 +252,10 @@ class VDE_Project {
         return $options;   
     }
     
+    /**
+     * Returns back extended option information
+     * @return  array       List of option groups, meta info, and all of their options
+     */
     public function getExtendedOptions() {
         $groups = array();
         
@@ -226,6 +288,10 @@ class VDE_Project {
         return $groups;
     }
     
+    /**
+     * Returns back the phrases used in this project.
+     * @return  array       Associative array of phrases and text
+     */
     public function getPhrases() {
         $phrases = array();
         
@@ -251,6 +317,10 @@ class VDE_Project {
         return $phrases;
     }
     
+    /**
+     * Returns back all phrases and phrase groups used in this project
+     * @return  array       List of phrase groups, meta info, and their phrases and info
+     */
     public function getExtendedPhrases() {
         $phraseTypes = array();
         
@@ -286,8 +356,11 @@ class VDE_Project {
     }
 }
 
-
-
+/**
+ * Thrown when shit hits the fan when gathering project info
+ * @package     VDE
+ * @author      SirAdrian
+ */
 class VDE_Project_Exception extends Exception {
 
 }

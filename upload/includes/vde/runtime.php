@@ -91,6 +91,30 @@ class VDE_Runtime {
     }
     
     /**
+     * Loads all projects in a given directory
+     * @param   string      Path containing multiple project directories
+     */
+    public function loadProjects($inDirectory, $flags = array()) {
+        $projects = array();
+        
+        foreach (scandir($inDirectory) as $directory) {
+            if (preg_match('/^([-_a-z0-9]+)$/i', $directory)) {   
+                try {
+                    $projects[$directory] = new VDE_Project("$inDirectory/$directory");
+                } catch (VDE_Project_Exception $e) {
+                    devdebug("VDE_Project Could not load $directory - " . $e->getMessage());   
+                } catch (Exception $e) {
+                    throw $e;   
+                }
+            }
+        }
+        
+        foreach ($projects as $projectDir => $project) {
+            $this->loadProject($project, isset($flags[$projectDir]) ? $flags[$projectDir] : self::ENABLE_ALL);
+        }
+    }
+    
+    /**
      * Retrieves the code from init_startup hook to be explicitly evaluated
      * @return  string
      */

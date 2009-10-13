@@ -141,6 +141,8 @@ class VDE_Builder {
             $this->_xml->add_tag('installcode',   $codes['up'],   array(), (bool)$codes['up']);
             $this->_xml->add_tag('uninstallcode', $codes['down'], array(), (bool)$codes['down']);
             
+            $this->_output .= "Added up/down code for version $version\n";
+            
             $this->_xml->close_group();
         }
         
@@ -171,7 +173,7 @@ class VDE_Builder {
 				'minute'  => $task['minutes']
 			));
 					
-			$this->_xml->close_group();		
+			$this->_xml->close_group();	
 			
 			// Add Phrases
 			$this->_phrases['cron']['title'] = 'Scheduled Tasks';
@@ -248,10 +250,15 @@ class VDE_Builder {
      * @param   array       Options from files
      */
 	protected function _processOptions($optionGroups) {
+	    
+	    $existingGroups = $this->_findExistingPhrasegroups();
+	    
 		$this->_xml->add_group('options');
 		
         foreach ($optionGroups as $group) {
-            $this->_phrases['vbsettings']['phrases']["settinggroup_$group[varname]"] = $group['title'];
+            if (!in_array($group['varname'], $existingGroups)) {
+                $this->_phrases['vbsettings']['phrases']["settinggroup_$group[varname]"] = $group['title'];
+            }
             
             $this->_xml->add_group('settinggroup', array(
                 'name'         => $group['varname'],
@@ -296,8 +303,10 @@ class VDE_Builder {
 			
 			$this->_xml->close_group();			
 		}
-			
-		$this->_phrases['vbsettings']['title'] = 'vBulletin Settings';
+		
+		if ($optionGroups) {
+		    $this->_phrases['vbsettings']['title'] = 'vBulletin Settings';   
+		}
 		
 		$this->_xml->close_group();	
 	}
@@ -314,11 +323,11 @@ class VDE_Builder {
                 $phrasetypes[$fieldName] = array(
                     'fieldname' => $fieldName,
                     'title'     => $fieldType['title'],
-                    'phrases'   => array()
+                    'phrases'   => $fieldType['phrases']
                 );
             }
-            
-            foreach ($this->_phrases[$fieldName]['phrases'] as $varname => $text) {
+           
+            foreach ($phrasetypes[$fieldName]['phrases'] as $varname => $text) {
                 $phrasetypes[$fieldName]['phrases'][$varname] = array(
                     'varname' => $varname,
                     'text'    => $text,
@@ -326,7 +335,7 @@ class VDE_Builder {
                     'version' => $this->_project->meta['version']
                 );
             }
-        }
+        }       
          
         foreach ($phrasetypes as $phrasetype) {
 			$attributes = array(
@@ -373,6 +382,23 @@ class VDE_Builder {
             $fc->copy($file, $dest = "$uploadPath" . str_replace(DIR, '', $file), $uploadPath);
             $this->_output .= "Copied file " . str_replace($uploadPath . '/', '', $dest) . "\n";
         }
+    }
+    
+    protected function _findExistingPhrasegroups() {
+        $groups = array();
+        
+        $result = $this->_registry->db->query_read("
+            SELECT fieldname
+              FROM " . TABLE_PREFIX . "phrasetype
+             WHERE product = ''
+        ");
+        
+        $groups = array();
+        while ($row = $this->_registry->db->fetch_array($result)) {
+           $groups[] = $row['fieldname'];
+        }
+        
+        return $groups;
     }
 }
 

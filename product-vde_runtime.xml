@@ -21,7 +21,7 @@
 require_once(DIR . '/includes/vde/project.php');
 
 $vdeRuntime = new VDE_Runtime($vbulletin);
-$vdeRuntime->loadProject(new VDE_Project('./projects/exampleproject'));
+$vdeRuntime->loadProjects(DIR . '/projects');
 
 if ($initCode = $vdeRuntime->getInitCode()) {
 	eval($initCode);
